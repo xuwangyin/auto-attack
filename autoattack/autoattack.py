@@ -96,7 +96,9 @@ class AutoAttack():
         with torch.no_grad():
             # calculate accuracy
             n_batches = int(np.ceil(x_orig.shape[0] / bs))
-            robust_flags = torch.zeros(x_orig.shape[0], dtype=torch.bool, device=x_orig.device)
+            # robust_flags = torch.zeros(x_orig.shape[0], dtype=torch.bool, device=x_orig.device)
+            # Disable robust flags
+            robust_flags = torch.ones(x_orig.shape[0], dtype=torch.bool, device=x_orig.device)
             y_adv = torch.empty_like(y_orig)
             for batch_idx in range(n_batches):
                 start_idx = batch_idx * bs
@@ -107,7 +109,7 @@ class AutoAttack():
                 output = self.get_logits(x).max(dim=1)[1]
                 y_adv[start_idx: end_idx] = output
                 correct_batch = y.eq(output)
-                robust_flags[start_idx:end_idx] = correct_batch.detach().to(robust_flags.device)
+                # robust_flags[start_idx:end_idx] = correct_batch.detach().to(robust_flags.device)
 
             robust_accuracy = torch.sum(robust_flags).item() / x_orig.shape[0]
             robust_accuracy_dict = {'clean': robust_accuracy}
@@ -147,49 +149,57 @@ class AutoAttack():
                     # run attack
                     if attack == 'apgd-ce':
                         # apgd on cross-entropy loss
-                        self.apgd.loss = 'ce'
+                        # self.apgd.loss = 'ce'
                         self.apgd.seed = self.get_seed()
-                        adv_curr = self.apgd.perturb(x, y) #cheap=True
+                        # adv_curr = self.apgd.perturb(x, y) #cheap=True
+                        adv_curr = self.apgd.perturb(x, y, best_loss=True)
                     
                     elif attack == 'apgd-dlr':
                         # apgd on dlr loss
                         self.apgd.loss = 'dlr'
                         self.apgd.seed = self.get_seed()
-                        adv_curr = self.apgd.perturb(x, y) #cheap=True
+                        # adv_curr = self.apgd.perturb(x, y) #cheap=True
+                        adv_curr = self.apgd.perturb(x, y, best_loss=True)
                     
                     elif attack == 'fab':
                         # fab
                         self.fab.targeted = False
                         self.fab.seed = self.get_seed()
-                        adv_curr = self.fab.perturb(x, y)
+                        # adv_curr = self.fab.perturb(x, y)
+                        adv_curr = self.fab.perturb(x, y, best_loss=True)
                     
                     elif attack == 'square':
                         # square
                         self.square.seed = self.get_seed()
-                        adv_curr = self.square.perturb(x, y)
+                        # adv_curr = self.square.perturb(x, y)
+                        adv_curr = self.square.perturb(x, y, best_loss=True)
                     
                     elif attack == 'apgd-t':
                         # targeted apgd
                         self.apgd_targeted.seed = self.get_seed()
-                        adv_curr = self.apgd_targeted.perturb(x, y) #cheap=True
+                        # adv_curr = self.apgd_targeted.perturb(x, y) #cheap=True
+                        adv_curr = self.apgd_targeted.perturb(x, y, best_loss=True)
                     
                     elif attack == 'fab-t':
                         # fab targeted
                         self.fab.targeted = True
                         self.fab.n_restarts = 1
                         self.fab.seed = self.get_seed()
-                        adv_curr = self.fab.perturb(x, y)
+                        # adv_curr = self.fab.perturb(x, y) #cheap=True
+                        adv_curr = self.fab.perturb(x, y, best_loss=True)
                     
                     else:
                         raise ValueError('Attack not supported')
                 
-                    output = self.get_logits(adv_curr).max(dim=1)[1]
-                    false_batch = ~y.eq(output).to(robust_flags.device)
-                    non_robust_lin_idcs = batch_datapoint_idcs[false_batch]
-                    robust_flags[non_robust_lin_idcs] = False
+                    # output = self.get_logits(adv_curr).max(dim=1)[1]
+                    # false_batch = ~y.eq(output).to(robust_flags.device)
+                    # non_robust_lin_idcs = batch_datapoint_idcs[false_batch]
+                    # robust_flags[non_robust_lin_idcs] = False
 
-                    x_adv[non_robust_lin_idcs] = adv_curr[false_batch].detach().to(x_adv.device)
-                    y_adv[non_robust_lin_idcs] = output[false_batch].detach().to(x_adv.device)
+                    # x_adv[non_robust_lin_idcs] = adv_curr[false_batch].detach().to(x_adv.device)
+                    # y_adv[non_robust_lin_idcs] = output[false_batch].detach().to(x_adv.device)
+
+                    x_adv[batch_datapoint_idcs] = adv_curr.detach().to(x_adv.device)
 
                     if self.verbose:
                         num_non_robust_batch = torch.sum(false_batch)    

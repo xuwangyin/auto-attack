@@ -257,6 +257,10 @@ class APGDAttack():
                 criterion_indiv = self.dlr_loss_targeted
             elif self.loss == 'ce-targeted':
                 criterion_indiv = self.ce_loss_targeted
+            elif self.loss == 'first_logit':
+                criterion_indiv = lambda logits, y: logits[:, 0]
+            elif self.loss == 'max_logit':
+                criterion_indiv = lambda logits, y: torch.max(logits, dim=1)[0]
             else:
                 raise ValueError('unknowkn loss')
         else:
@@ -461,7 +465,7 @@ class APGDAttack():
                             are returned, otherwise adversarial examples
         """
 
-        assert self.loss in ['ce', 'dlr'] #'ce-targeted-cfts'
+        assert self.loss in ['ce', 'dlr', 'first_logit', 'max_logit'] #'ce-targeted-cfts'
         if not y is None and len(y.shape) == 0:
             x.unsqueeze_(0)
             y.unsqueeze_(0)
