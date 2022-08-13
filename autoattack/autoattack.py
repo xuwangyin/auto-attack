@@ -201,10 +201,10 @@ class AutoAttack():
 
                     x_adv[batch_datapoint_idcs] = adv_curr.detach().to(x_adv.device)
 
-                    if self.verbose:
-                        num_non_robust_batch = torch.sum(false_batch)    
-                        self.logger.log('{} - {}/{} - {} out of {} successfully perturbed'.format(
-                            attack, batch_idx + 1, n_batches, num_non_robust_batch, x.shape[0]))
+                    # if self.verbose:
+                    #     num_non_robust_batch = torch.sum(false_batch)    
+                    #     self.logger.log('{} - {}/{} - {} out of {} successfully perturbed'.format(
+                    #         attack, batch_idx + 1, n_batches, num_non_robust_batch, x.shape[0]))
                 
                 robust_accuracy = torch.sum(robust_flags).item() / x_orig.shape[0]
                 robust_accuracy_dict[attack] = robust_accuracy
